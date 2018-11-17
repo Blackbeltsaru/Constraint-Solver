@@ -19,211 +19,42 @@ public class Main
 	
 	public static void testing() throws FileNotFoundException
 	{
-		PrintWriter writer = new PrintWriter("TestOutput.csv");
-		writer.println("Name, Algorithm, Ordering,  #cc, #nv, #bt, #cpuTime, #cc, #nv, #bt, cpuTime, #solutions");
-		
-		File dir = new File("TestFiles");
-		File[] testFiles = dir.listFiles();
-		for(File test : testFiles)
+		ArrayList<String[]> fin = new ArrayList<String[]>();
+		String[] staticOrder = /*{"LX", "LD", "DEG", "DD", "dLX", "dLD", "dDEG", "dDD"};*/{"LX", "LD", "DEG", "DD"}; /*{"dLX", "dLD", "dDEG", "dDD"}*/;
+		String[] search = /*{"BT", "CBJ", "FC", "FCCBJ"};*/ {"FCCBJ"};
+		File dir = new File("TestFiles\\RunOn");
+		File[] listing = dir.listFiles();
+		for(int i = 0; i < listing.length; i++)
 		{
-			long cpuTime; 
-			String fileName = "TestFiles/" + test.getName();
-			InstanceParser parser = new InstanceParser();
-			System.out.println(fileName + "on lx");
-			parser.loadInstance(fileName);
-			parser.parse(false);
-			String order = "LX";
-			ProblemSolver problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			problem.nodeConsistency();
-			try
+			String path = listing[i].getPath();
+			for(int j = 0; j < staticOrder.length; j ++)
 			{
-				problem.backtrackSearch(false);
+				String order = staticOrder[j];
+				for(int k = 0; k < search.length; k++)
+				{
+					String searchString = search[k];
+					String[] args = {"-f", path, "-s", searchString, "-u", order};
+					String[] val = run(args);
+					fin.add(val);
+				}
 			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getName() + ", ");
-			writer.print("BT, ");
-			writer.print(order + ", ");
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			
-			problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			ArrayList<String[]> sol = null;
-			problem.nodeConsistency();
-			try
-			{
-				sol = problem.backtrackSearch(true);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			writer.print(sol.size());
-			writer.println();
-			
-			//=========================================================================================
-			System.out.println(fileName + "on ld");
-			 order = "LD";
-			 problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			problem.nodeConsistency();
-			try
-			{
-				problem.backtrackSearch(false);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getName() + ", ");
-			writer.print("BT, ");
-			writer.print(order + ", ");
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			
-			problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			 sol = null;
-			problem.nodeConsistency();
-			try
-			{
-				sol = problem.backtrackSearch(true);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			writer.print(sol.size());
-			writer.println();
-			
-			//=========================================================================================
-			System.out.println(fileName + "on deg");
-			 order = "DEG";
-			 problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			problem.nodeConsistency();
-			try
-			{
-				problem.backtrackSearch(false);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getName() + ", ");
-			writer.print("BT, ");
-			writer.print(order + ", ");
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			
-			problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			 sol = null;
-			problem.nodeConsistency();
-			try
-			{
-				sol = problem.backtrackSearch(true);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			writer.print(sol.size());
-			writer.println();
-			
-			//=========================================================================================
-			System.out.println(fileName + "on dd");
-			 order = "DD";
-			 problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			problem.nodeConsistency();
-			try
-			{
-				problem.backtrackSearch(false);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getName() + ", ");
-			writer.print("BT, ");
-			writer.print(order + ", ");
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			
-			problem = new ProblemSolver(parser, order, "Static");			
-			cpuTime = System.currentTimeMillis();
-			sol = null;
-			problem.nodeConsistency();
-			try
-			{
-				sol = problem.backtrackSearch(true);
-			}
-			catch(DomainWipeoutException e)
-			{
-				System.out.println("Domain Wipeout");
-			}
-			cpuTime = System.currentTimeMillis() - cpuTime;
-			
-			writer.print(problem.getCC() + ", ");
-			writer.print(problem.getNV()  + ", ");
-			writer.print(problem.getBT() + ", ");
-			writer.print(cpuTime + ", ");
-			writer.print(sol.size());
-			writer.println();
-			
-			//=========================================================================================
-			
-			
-			
-		}//End loop through the files
+		}
 		
-		writer.close();		
-		
-		
-		
+		PrintWriter writer = new PrintWriter("TestOutput.csv");
+		for(int i = 0; i < fin.size(); i++)
+		{
+			for(int j = 0; j < 11; j++)
+			{
+				writer.print(fin.get(i)[j] + ", ");
+			}
+			writer.println();
+		}
+		writer.close();
 	}//End testing
 
-	public static void run(String[] args) throws FileNotFoundException
+	public static String[] run(String[] args) throws FileNotFoundException
 	{
+		String[] returnStr = new String[11];
 		long setupTime;
 		long cpuTime = 0;
 		String filename = "";
@@ -232,7 +63,7 @@ public class Main
 		String order = "";
 		String dynamic = "static";
 		String[] flags = {"-f","-a", "-s", "-u"};
-		ArrayList<String[]> solutionSet = new ArrayList<String[]>();
+		ArrayList<Integer[]> solutionSet = new ArrayList<Integer[]>();
 		InstanceParser parser = new InstanceParser();
 
 		//****************************************
@@ -276,8 +107,8 @@ public class Main
 		//****************************************
 		setupTime = System.currentTimeMillis();
 		
-		//filename = "TestFiles\\queens-conflicts.xml";
-		//search = "BT";
+		//filename = "TestFiles\\RunOn\\6queens-conflicts.xml";
+		//search = "FCCBJ";
 		//order = "LX";
 		//acAlg = "AC3";
 		parser.loadInstance(filename);
@@ -303,10 +134,21 @@ public class Main
 				problem.ac3();
 			}//End AC3 check
 			//****************************************
-
 			if(search.equalsIgnoreCase("BT"))
 			{
 				solutionSet = problem.backtrackSearch(false);
+			}
+			else if(search.equalsIgnoreCase("CBJ"))
+			{
+				solutionSet = problem.cbjSearch(false);
+			}
+			else if(search.equalsIgnoreCase("FC"))
+			{
+				solutionSet = problem.fcSearch(false, false);
+			}
+			else if(search.equalsIgnoreCase("FCCBJ"))
+			{
+				solutionSet = problem.fcSearch(false, true);
 			}
 
 		}//End look for domain wipeout
@@ -322,6 +164,7 @@ public class Main
 			//Prints Output
 			//****************************************
 			System.out.println("Instance name: " + problem.getName());
+			System.out.println("Search: " + search);
 			System.out.println("variable-order-heuristic: " + order);
 			System.out.println("var-static-dynamic: " + dynamic);
 			System.out.println("value-ordering-heuristic: LX");
@@ -335,7 +178,7 @@ public class Main
 				System.out.print("First solution: ");
 				for(int i = 0; i < solutionSet.get(0).length; i++)
 				{
-					System.out.print(solutionSet.get(0)[i]);
+					System.out.print(solutionSet.get(0)[i] + " ");
 				}
 				System.out.println();
 			}//End check for solutions
@@ -343,6 +186,12 @@ public class Main
 			{
 				System.out.println("No solution");
 			}
+			returnStr[0] = problem.getName();
+			returnStr[1] = search;
+			returnStr[2] = Integer.toString(problem.getCC());
+			returnStr[3] = Integer.toString(problem.getNV());
+			returnStr[4] = Integer.toString(problem.getBT());
+			returnStr[5] = Long.toString(cpuTime);
 
 		}//End cleanup
 		
@@ -370,6 +219,18 @@ public class Main
 			{
 				solutionSet = problem.backtrackSearch(true);
 			}
+			else if(search.equalsIgnoreCase("CBJ"))
+			{
+				solutionSet = problem.cbjSearch(true);
+			}
+			else if(search.equalsIgnoreCase("FC"))
+			{
+				solutionSet = problem.fcSearch(true, false);
+			}
+			else if(search.equalsIgnoreCase("FCCBJ"))
+			{
+				solutionSet = problem.fcSearch(true, true);
+			}
 
 		}//End look for domain wipeout
 		catch(DomainWipeoutException e)
@@ -388,8 +249,16 @@ public class Main
 			System.out.println("all-sol bt: " + problem.getBT());
 			System.out.println("all-sol cpu: "           + cpuTime);
 			System.out.println("Number of Solutions: " + solutionSet.size());
+			
+			returnStr[6] = Integer.toString(problem.getCC());
+			returnStr[7] = Integer.toString(problem.getNV());
+			returnStr[8] = Integer.toString(problem.getBT());
+			returnStr[9] = Long.toString(cpuTime);
+			returnStr[10] = Integer.toString(solutionSet.size());
+			
 
 		}//End cleanup
-
+		
+		return returnStr;
 	}//end run
 }//end class

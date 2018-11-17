@@ -12,9 +12,12 @@ public class Variable implements Comparable<Variable>
 	String orderHeuristic;							//Holds the ordering heuristic for the variable
 	private String name;							//Holds the name of the Variable
 	private int[]  initDomain;						//Holds the initial domain of the variable
-	private ArrayList<Integer>	  	currDomain;		//Holds the current domain of the variable
-	private ArrayList<Constraint>	constraints;	//Holds all constraints that affect this variable
-	private ArrayList<NeighborPair> neighbors;		//Holds all neighbors of the variable
+	private ArrayList<Integer>	  			currDomain;		//Holds the current domain of the variable
+	private ArrayList<Constraint>			constraints;	//Holds all constraints that affect this variable
+	private ArrayList<NeighborPair> 		neighbors;		//Holds all neighbors of the variable
+	private ArrayList<ArrayList<Integer>>	reductions;		//Holds the reductions of the variables, ie the values removed from the current domain by other varaiables TODO
+	private ArrayList<Variable>				future;			//Holds the furutre variables that this variable checks against TODO
+	private ArrayList<Variable>				past;			//Past variables that checked against this variable
 	
 	/*====================
 	 *Nested class to keep track of constraits linking neighbors 
@@ -51,6 +54,9 @@ public class Variable implements Comparable<Variable>
 		this.initDomain = initDomain;
 		this.constraints = new ArrayList<Constraint>();
 		this.neighbors = new ArrayList<NeighborPair>();
+		this.reductions = new ArrayList<ArrayList<Integer>>();
+		this.future = new ArrayList<Variable>();
+		this.past = new ArrayList<Variable>();
 		this.orderHeuristic = order;
 		
 		int length = this.initDomain.length;
@@ -59,6 +65,7 @@ public class Variable implements Comparable<Variable>
 		{
 			this.currDomain.add((Integer)initDomain[i]);
 		}//End domain copy
+		
 	}//End Constructor
 	
 	/*====================
@@ -125,6 +132,21 @@ public class Variable implements Comparable<Variable>
 	{
 		return this.assignment;
 	}//End getAssignment
+	
+	public ArrayList<ArrayList<Integer>> getReductions()
+	{
+		return this.reductions;
+	}// End getReductions
+	
+	public ArrayList<Variable> getFuture()
+	{
+		return this.future;
+	}
+	
+	public ArrayList<Variable> getPast()
+	{
+		return this.past;
+	}
 	
 	/*====================
 	 * Sets the variables current assignment
@@ -284,11 +306,11 @@ public class Variable implements Comparable<Variable>
 		{
 			if(this.constraints.size() > object.getConstraints().size())
 			{
-				return 1;
+				return -1;
 			}//end greater
 			else if(this.constraints.size() < object.getConstraints().size())
 			{
-				return -1;
+				return 1;
 			}//end less
 			else
 			{
@@ -313,4 +335,59 @@ public class Variable implements Comparable<Variable>
 		
 		return this.name.compareTo(((Variable)object).getName());
 	}//End compareTo
+	
+	public Variable popPast()
+	{
+		int size = this.past.size();
+		Variable temp = this.past.get(size - 1);
+		this.past.remove(size - 1);
+		return temp;
+	}//End popPast
+	
+	public ArrayList<Integer> popReductions()
+	{
+		int size = this.reductions.size() - 1;
+		ArrayList<Integer> temp = this.reductions.get(size);
+		this.reductions.remove(size);
+		return temp;
+	}//End popReductions
+	
+	public void pushPast(Variable var)
+	{
+		this.past.add(var);
+	}//End pushPast
+	
+	public void pushFuture(Variable var)
+	{
+		this.future.add(var);
+	}//End pushFuture
+	
+	public void pushReduction(ArrayList<Integer> list)
+	{
+		this.reductions.add(list);
+	}
+	
+	public void returnDomain(int val)
+	{
+		int size = this.initDomain.length;
+		for(int i = 0; i < size; i++)
+		{
+			if(val == this.initDomain[i])
+			{
+				int length = this.currDomain.size();
+				for(int j = 0; j < length; j++)
+				{
+					if(((Integer)val).compareTo(currDomain.get(j)) >  0)
+					{
+						this.currDomain.add(j, val);
+						return;
+					}
+				}//end put in the right spot
+				this.currDomain.add(val);
+				return;
+			}//End check to make sure it was orrignially in the domain
+		}//End loop through init domain
+	}//End returnDomain
+	
+	
 }//End Class

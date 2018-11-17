@@ -15,19 +15,20 @@ import abscon.instance.components.PExtensionConstraint;
 
 public class ProblemSolver 
 {
-	private int 					cc;							//Holds the number of constraint checks
-	private int						nv;							//Holds the number of nodes visited
-	private int						bt;							//Holds the number backtracks
-	private int 					fval;						//Holds the number of values removed from the domains of variables
-	private float 					iSize;						//Holds the initial size of the CSP
-	private float 					fSize;						//Holds the final size of the CSP
-	private String					varOrdering;				//Holds the variable ordering heuristic
-	private String					varDynamic;					//Holds the static or dynamic status of the variable ordering
-	private String 					name;						//Holds the name of the problem
-	private ArrayList<Variable> 	variables;					//Holds all of the variables of the problem
-	private ArrayList<Variable>		unassigned;					//Holds all of the unassigned variables
-	private ArrayList<Variable>		assigned;					//Holds all of the assigned variables
-	private ArrayList<Constraint> 	constraints;				//Holds all of the constraints of the problem
+	private int 							cc;							//Holds the number of constraint checks
+	private int								nv;							//Holds the number of nodes visited
+	private int								bt;							//Holds the number backtracks
+	private int 							fval;						//Holds the number of values removed from the domains of variables
+	private float 							iSize;						//Holds the initial size of the CSP
+	private float 							fSize;						//Holds the final size of the CSP
+	private String							varOrdering;				//Holds the variable ordering heuristic
+	private String							varDynamic;					//Holds the static or dynamic status of the variable ordering
+	private String 							name;						//Holds the name of the problem
+	private ArrayList<Variable> 			variables;					//Holds all of the variables of the problem
+	private ArrayList<Variable>				unassigned;					//Holds all of the unassigned variables
+	private ArrayList<Variable>				assigned;					//Holds all of the assigned variables
+	private ArrayList<Constraint> 			constraints;				//Holds all of the constraints of the problem
+	private ArrayList<ArrayList<Variable>> 	confSet;					//Holds the conflict set of the problem
 
 	/*====================
 	 * Constructor
@@ -46,7 +47,8 @@ public class ProblemSolver
 		this.name = parser.getName();
 		this.variables = new ArrayList<Variable>();
 		this.assigned = new ArrayList<Variable>();
-		this.constraints = new ArrayList<Constraint>();		
+		this.constraints = new ArrayList<Constraint>();	
+		this.confSet = new ArrayList<ArrayList<Variable>>();
 
 		//****************************************
 		//Creates Variables
@@ -176,21 +178,27 @@ public class ProblemSolver
 		}//End constraint iteration
 
 		//Sorts the lists by lexiographic order
-		Collections.sort(this.variables);
-		Collections.sort(this.constraints);
-		
-		this.unassigned = this.variables;
+		//Collections.sort(this.variables);
+		//Collections.sort(this.constraints);
 
+		int length = variables.size();
+		this.unassigned = new ArrayList<Variable>();
+		for(int i = 0; i < length; i++)
+		{
+			this.unassigned.add(this.variables.get(i));
+		}//End unassigned copy
+
+		Collections.sort(this.unassigned);
+		
 		//Computes the initial size
 		//Calculate initial size
 		iSize = 1;
-		int length = variables.size();
 		for(int i = 0; i < length; i++)
 		{
 			iSize *= Math.log(variables.get(i).getCurrDomain().size());
 		}
 	}//End Constructor
-	
+
 	/*====================
 	 * Returns the name of the problem
 	 *====================*/
@@ -198,7 +206,7 @@ public class ProblemSolver
 	{
 		return this.name;
 	}//End getName
-	
+
 	/*====================
 	 *Returns the number of constraint checks
 	 *====================*/
@@ -206,7 +214,7 @@ public class ProblemSolver
 	{
 		return this.cc;
 	}//End getCC
-	
+
 	/*====================
 	 *Returns the number of nodes visited
 	 *====================*/
@@ -214,7 +222,7 @@ public class ProblemSolver
 	{
 		return this.nv;
 	}//End getCC
-	
+
 	/*====================
 	 *Returns the number of backtrack occurences
 	 *====================*/
@@ -222,7 +230,7 @@ public class ProblemSolver
 	{
 		return this.bt;
 	}//End getCC
-	
+
 	/*====================
 	 *Returns the number of removes values
 	 *====================*/
@@ -230,7 +238,7 @@ public class ProblemSolver
 	{
 		return this.fval;
 	}//End getFval
-	
+
 	/*====================
 	 *Returns the initial size of the CSP
 	 *====================*/
@@ -238,7 +246,7 @@ public class ProblemSolver
 	{
 		return this.iSize;
 	}//End getIsize
-	
+
 	/*====================
 	 *Returns the final size of the CSP
 	 *====================*/
@@ -253,14 +261,14 @@ public class ProblemSolver
 		}//End variable iteration
 		return this.fSize;
 	}//End getFSize
-	
+
 	/*====================
 	 * Prints the problem
 	 *====================*/
 	public void Print()
 	{
 		System.out.println("Instance Name: " + this.name);
-		
+
 		//Iterate through variables
 		System.out.println("Variables");		
 		int length = this.variables.size();
@@ -268,7 +276,7 @@ public class ProblemSolver
 		{
 			this.variables.get(i).Print();
 		}//End variable printing
-		
+
 		//Iterate over constraints
 		System.out.println("Constraints:");
 		length = this.constraints.size();
@@ -277,20 +285,20 @@ public class ProblemSolver
 			this.constraints.get(i).Print();
 		}//End constraint printing
 	}//End Print
-	
+
 	/*====================
 	 * Checks consistency for each node
 	 *====================*/
 	public void nodeConsistency()
 	{
 		int length = this.constraints.size();
-		
+
 		//Iterates over every constraint
 		for(int i = 0; i < length; i++)
 		{
 			Constraint temp = this.constraints.get(i);
 			int arity = temp.getArity();
-			
+
 			//If arity is 1, check each value in the constraint for consistancy
 			if(arity == 1)
 			{
@@ -298,7 +306,7 @@ public class ProblemSolver
 				Variable variable = scope.get(0);
 				ArrayList<Integer> domain = variable.getCurrDomain();
 				int domainSize = domain.size();
-				
+
 				//Iterate over domain
 				for(int j = domainSize - 1; j >= 0; j--)
 				{
@@ -306,14 +314,14 @@ public class ProblemSolver
 					tuple[0] = domain.get(j);
 					long cost = temp.computeCostOf(tuple);
 					this.cc++;
-					
+
 					//Removes failed checks
 					if(cost == 1)
 					{
 						variable.removeFromDomain(tuple[0]);
 						this.fval++;
 					}//End remove check
-					
+
 					//Check for domain wipeout
 					if(variable.getCurrDomain().size() == 0)
 					{
@@ -321,13 +329,13 @@ public class ProblemSolver
 						throw new DomainWipeoutException();
 					}//End domain wipeout check
 				}//End domain iteration
-				
+
 				variable.arcConsistent();
-				
+
 			}//End arity check
 		}//End Constraint iteration
 	}//End nodeConsistency
-	
+
 	/*====================
 	 * Runs AC1 on the problem
 	 *====================*/
@@ -350,10 +358,10 @@ public class ProblemSolver
 				queue.add(entry);
 			}//End inner loop
 		}//End queue builder
-		
+
 		boolean update;
 		int queueLength = queue.size();
-		
+
 		//Iterate until nothing has changed
 		do
 		{
@@ -373,15 +381,15 @@ public class ProblemSolver
 					throw new DomainWipeoutException();
 				}//Process domain wipeout
 			}//End queue iteration
-			
+
 		}while (update);//End iteration while things have changed  
-		
+
 		for(int i = 0; i < variableLength; i++)
 		{
 			this.variables.get(i).arcConsistent();
 		}//End arc consistent loop
 	}//End AC1
-	
+
 	/*====================
 	 * Runs AC3 on the problem
 	 *====================*/
@@ -404,7 +412,7 @@ public class ProblemSolver
 				queue.add(entry);
 			}//End inner loop
 		}//End queue builder
-		
+
 		//Loop through AC 3 while there are still entries in the queue
 		while(queue.size() != 0)
 		{
@@ -413,7 +421,7 @@ public class ProblemSolver
 			entry = queue.get(0);
 			queue.remove(0);
 			Boolean reviseVal = null;
-	
+
 			try
 			{
 				//Revise the entry
@@ -454,13 +462,13 @@ public class ProblemSolver
 				throw new DomainWipeoutException();
 			}//Process domain wipeout
 		}//End queue iteration
-		
+
 		for(int i = 0; i < variableLength; i++)
 		{
 			this.variables.get(i).arcConsistent();
 		}//End arc consistent loop
 	}//End ac3
-	
+
 	/*====================
 	 * Checks whether the given 
 	 * variable value pair is 
@@ -476,7 +484,7 @@ public class ProblemSolver
 		{
 			//Check if the given tuple is valid in the constraint
 			PVariable[] scope = share.getOriginalConstraint().getScope();
-			
+
 			//Check the order the variables need to go in
 			if(scope[0].getName().equalsIgnoreCase(v1.getName()) && scope[1].getName().equalsIgnoreCase(v2.getName()))
 			{
@@ -499,9 +507,8 @@ public class ProblemSolver
 		else
 		{
 			//System.out.println("Null Shared Constraint");
-			//TODO throw error
 		}//end error block
-		
+
 		if(costOf == 0)
 		{
 			returnVal = true;
@@ -514,12 +521,11 @@ public class ProblemSolver
 		{
 			//System.out.println("Tuple cost not correct");
 			returnVal = true;
-			//TODO throw error
 		}//End default case
-		
+
 		return returnVal;
 	}//End check
-	
+
 	/*====================
 	 * Checks to see if the 
 	 * given value in the 
@@ -532,7 +538,7 @@ public class ProblemSolver
 		//Checks the value of d1 against every value in the domain of v2 for support
 		ArrayList<Integer> domain = v2.getCurrDomain();
 		int length = domain.size();
-		
+
 		for(int i = 0; i < length; i++)
 		{
 			int val = domain.get(i);
@@ -542,10 +548,10 @@ public class ProblemSolver
 				return true;
 			}//End check tuple
 		}//End iteration through domain
-		
+
 		return false;
 	}//End support
-	
+
 	/*====================
 	 * Revises the domain of v1
 	 * given the variable v2
@@ -567,7 +573,7 @@ public class ProblemSolver
 					//Checks the support status for the current value
 					int val = domain.get(i);
 					boolean support = this.supported(v1, val, v2);
-					
+
 					//Removes not supported values from domain
 					if(!support)
 					{
@@ -575,7 +581,7 @@ public class ProblemSolver
 						this.fval++;
 						returnVal = true;
 					}//End support check
-					
+
 					//Check for domain wipeout
 					if(v1.getCurrDomain().size() == 0)
 					{
@@ -584,24 +590,206 @@ public class ProblemSolver
 				}//End domain iteration
 			}//End arity check
 		}//End neighbor check
-		
+
 		return returnVal;
 	}//End revise
-	
+
+	/*====================
+	 * Returns the next variable to instantiate 
+	 * for search
+	 *====================*/
+	public ArrayList<Variable> requestNextVariable()
+	{
+		//TODO
+		if(this.unassigned.size() > 0)
+		{
+			Variable var = null;
+			int removeIndex = - 1;
+			if(this.varOrdering.equals("LX") || this.varOrdering.equals("LD") || this.varOrdering.equals("DEG") || this.varOrdering.equals("DD"))
+			{
+				var = this.unassigned.get(0);
+				removeIndex = 0;
+			}//End static ordering
+			else if(this.varOrdering.equals("dLX"))
+			{
+				var = this.unassigned.get(0);
+				removeIndex = 0;				
+				for(int i = 1; i < unassigned.size(); i++)
+				{					
+					Variable temp = this.unassigned.get(i);
+
+					//Domino Effect
+					if(temp.getCurrDomain().size() == 1)
+					{
+						this.assigned.add(temp);
+						this.unassigned.remove(i);
+						this.confSet.add(new ArrayList<Variable>());
+						return this.assigned;
+					}//End domino effect
+
+					if(temp.getName().compareTo(var.getName()) < 0)
+					{
+						var = temp;
+						removeIndex = i;
+					}//End check for less
+				}//End look at all variables
+			}//End dynamic lexiographic ordering
+			else if(this.varOrdering.equals("dLD"))
+			{
+				var = this.unassigned.get(0);
+				int value = var.getCurrDomain().size();
+				removeIndex = 0;
+				for(int i = 1; i < unassigned.size(); i++)
+				{
+					Variable temp = this.unassigned.get(i);
+					int size = temp.getCurrDomain().size();
+					if(size == value)
+					{
+						if(temp.getName().compareTo(var.getName()) < 0)
+						{
+							var = temp;
+							removeIndex = i;
+						}//End lexiographic check
+					}//End lexiographic order check
+					if(size < value)
+					{
+						value = size;
+						var = temp;
+						removeIndex = i;						
+					}//End less than check
+				}//End look at all variables
+			}//End dynamic least domain ordering
+			else if(this.varOrdering.equals("dDEG"))
+			{
+				var = this.unassigned.get(0);
+				int value = 0;
+				ArrayList<Variable> neighbor = var.getNeighbors();
+				for(int j = 0; j < neighbor.size(); j++)
+				{
+					if(this.unassigned.contains(neighbor.get(j)))
+					{
+						value++;
+					}
+				}
+				removeIndex = 0;
+				for(int i = 1; i < unassigned.size(); i++)
+				{
+					Variable temp = this.unassigned.get(i);
+					int size = 0;
+					ArrayList<Variable> newNeighbor = temp.getNeighbors();
+					for(int j = 0; j < newNeighbor.size(); j++)
+					{
+						if(this.unassigned.contains(newNeighbor.get(j)))
+						{
+							size++;
+						}
+					}
+
+					//Domino Effect
+					if(temp.getCurrDomain().size() == 1)
+					{
+						this.assigned.add(temp);
+						this.unassigned.remove(i);
+						this.confSet.add(new ArrayList<Variable>());
+						return this.assigned;
+					}//end domino effect 
+
+					if(size == value)
+					{
+						if(temp.getName().compareTo(var.getName()) < 0)
+						{
+							var = temp;
+							removeIndex = i;
+						}//End lexiographic check
+					}//End lexiographic order check
+					if(size < value)
+					{
+						value = size;
+						var = temp;
+						removeIndex = i;						
+					}//End less than check
+				}//End look at all variables
+			}//End degree domain check
+			else if(this.varOrdering.equals("dDD"))
+			{
+				var = this.unassigned.get(0);
+				int degree = 0;
+				ArrayList<Variable> neighbor = var.getNeighbors();
+				for(int j = 0; j < neighbor.size(); j++)
+				{
+					if(this.unassigned.contains(neighbor.get(j)))
+					{
+						degree++;
+					}
+				}
+				double value = (double)var.getCurrDomain().size() / (double)degree;
+				removeIndex = 0;
+				for(int i = 1; i < unassigned.size(); i++)
+				{
+					Variable temp = this.unassigned.get(i);
+					int newDegree = 0;
+					ArrayList<Variable> newNeighbor = var.getNeighbors();
+					for(int j = 0; j < newNeighbor.size(); j++)
+					{
+						if(this.unassigned.contains(newNeighbor.get(j)))
+						{
+							newDegree++;
+						}
+					}
+					double size = (double)temp.getCurrDomain().size() / (double)newDegree;
+
+
+					//Domino Effect
+					if(temp.getCurrDomain().size() == 1)
+					{
+						this.assigned.add(temp);
+						this.unassigned.remove(i);
+						this.confSet.add(new ArrayList<Variable>());
+						return this.assigned;
+					}//End domino effect
+
+					if(size == value)
+					{
+						if(temp.getName().compareTo(var.getName()) < 0)
+						{
+							var = temp;
+							removeIndex = i;
+						}//End lexiographic check
+					}//End lexiographic order check
+					if(size < value)
+					{
+						value = size;
+						var = temp;
+						removeIndex = i;						
+					}//End less than check
+				}//End look at all variables
+			}//End domain degree domain check
+
+			this.assigned.add(var);
+			this.confSet.add(new ArrayList<Variable>());
+			this.unassigned.remove(removeIndex);
+			return this.assigned;
+		}//end if there are variables to assign
+		return null;
+	}//end label
+
+	//back jumping
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
+
 	/*====================
 	 * Searches for a solution using
 	 * simple backtrack search
 	 *====================*/
-	public ArrayList<String[]> backtrackSearch(boolean all)
+	public ArrayList<Integer[]> backtrackSearch(boolean all)
 	{
-		//TODO
-		Collections.sort(this.variables);
 		String status = null;
 		Variable temp = null;
-		ArrayList<String[]> solutionSet = new ArrayList<String[]>();
+		ArrayList<Integer[]> solutionSet = new ArrayList<Integer[]>();
 		//Gets the starting variable to instantiate
 		ArrayList<Variable> currPath = this.requestNextVariable();
-		
+
 		//Checks to ensure there was not an error with getting variables
 		if(currPath == null)
 		{
@@ -611,18 +799,18 @@ public class ProblemSolver
 		{
 			temp = currPath.get(currPath.size() -1);
 		}//End else check
-		
+
 		while(status == null)
-		{
+		{			
 			//Labels the incoming variable
 			currPath = this.label(currPath);
 			if(currPath == null)
 			{
 				int size = this.assigned.size();
-				String[] solution = new String[size];
+				Integer[] solution = new Integer[size];
 				for(int i = 0; i < size; i++)
 				{
-					String entry = this.assigned.get(i).getName() + ": " + this.assigned.get(i).getAssignment() + "  ::  ";
+					Integer entry = this.variables.get(i).getAssignment();
 					solution[i] = entry;
 				}//End solution iteration
 				solutionSet.add(solution);
@@ -632,6 +820,7 @@ public class ProblemSolver
 					tempVar.removeFromDomain(tempVar.getAssignment());
 					tempVar.removeAssignment();
 					currPath = this.assigned;
+					int length = this.assigned.size() - 1;
 				}//end look for all solutoins
 				else
 				{
@@ -646,7 +835,7 @@ public class ProblemSolver
 				//Unlable current variable
 				currPath = this.unlabel();
 			}//End unlabel check
-			
+
 			//Check for base case
 			if(currPath == null)
 			{
@@ -657,34 +846,36 @@ public class ProblemSolver
 				temp = currPath.get(currPath.size() - 1);
 			}
 		}//End loop until a status is determined
-		
+
 		return solutionSet;
 	}//end backtrackSearch
-	
+
 	/*====================
 	 * Unlables the given variable
 	 *====================*/
 	public ArrayList<Variable> unlabel()
 	{
+		//Find the deepest conflict in the conflict list
 		int jumpTo = this.assigned.size() - 2;
 		this.bt++;
 		if(jumpTo < 0)
 			return null;
-		for(int i = this.assigned.size() - 1; i >= jumpTo + 1; i--)
+		
+		for(int i = this.assigned.size() - 1; i > jumpTo; i--)
 		{
 			Variable temp = this.assigned.get(i);
 			temp.restore();
-			temp.removeAssignment();
 			this.unassigned.add(0, temp);
 			this.assigned.remove(i);
-		}//End unassigning of variables
+		}
 		
-		Variable temp = this.assigned.get(jumpTo);
-		temp.removeFromDomain(temp.getAssignment());
-		temp.removeAssignment();
-		return this.assigned;
+		Variable current = this.assigned.get(jumpTo);
+		current.removeFromDomain(current.getAssignment());
+		current.removeAssignment();
+		
+		return this.assigned;		
 	}//end unlable
-	
+
 	/*====================
 	 * Labels the given variable
 	 *====================*/
@@ -704,7 +895,8 @@ public class ProblemSolver
 			for(int j = 0; j < varSize; j++)
 			{
 				//consistent = consistent && check i, h
-				consistent = consistent && this.check(currVar, currVar.getAssignment(), vars.get(j), vars.get(j).getAssignment());
+				boolean check = this.check(currVar, currVar.getAssignment(), vars.get(j), vars.get(j).getAssignment());
+				consistent = consistent && check;
 			}//End iteraion through previous 
 			//if consistent
 			if(consistent)
@@ -724,19 +916,486 @@ public class ProblemSolver
 
 		return vars;
 	}//end label
-	
+
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
+
+	//Conflict directed back jumping
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
+
 	/*====================
-	 * Returns the next variable to instantiate 
-	 * for search
+	 * Searches for a solution using
+	 * simple backtrack search
 	 *====================*/
-	public ArrayList<Variable> requestNextVariable()
+	public ArrayList<Integer[]> cbjSearch(boolean all)
 	{
-		if(this.unassigned.size() > 0)
+		String status = null;
+		Variable temp = null;
+		ArrayList<Integer[]> solutionSet = new ArrayList<Integer[]>();
+		//Gets the starting variable to instantiate
+		ArrayList<Variable> currPath = this.requestNextVariable();
+
+		//Checks to ensure there was not an error with getting variables
+		if(currPath == null)
 		{
-			this.assigned.add(this.unassigned.get(0));
-			this.unassigned.remove(0);
-			return this.assigned;
-		}//end if there are variables to assign
-		return null;
+			status = "Impossible";
+		}//End check
+		else
+		{
+			temp = currPath.get(currPath.size() -1);
+		}//End else check
+
+		while(status == null)
+		{			
+			//Labels the incoming variable
+			currPath = this.cbjLabel(currPath);
+			if(currPath == null)
+			{
+				int size = this.assigned.size();
+				Integer[] solution = new Integer[size];
+				for(int i = 0; i < size; i++)
+				{
+					Integer entry = this.variables.get(i).getAssignment();
+					solution[i] = entry;
+				}//End solution iteration
+				solutionSet.add(solution);
+				if(all)
+				{
+					Variable tempVar = this.assigned.get(this.assigned.size() -1);
+					tempVar.removeFromDomain(tempVar.getAssignment());
+					tempVar.removeAssignment();
+					currPath = this.assigned;
+					ArrayList<Variable> set = this.confSet.get(this.confSet.size() - 1);
+					int length = this.assigned.size() - 1;
+					for(int i = 0; i < length; i++)
+					{
+						if(!(confSet.contains(this.assigned.get(i))))
+							set.add(this.assigned.get(i));
+					}
+				}//end look for all solutoins
+				else
+				{
+					status = "Solved";
+					return solutionSet;
+				}//End changing
+			}//End solution check
+			temp = currPath.get(currPath.size() -1); 
+			//If temp failed
+			if(temp.getCurrDomain().size() == 0)
+			{
+				//Unlable current variable
+				currPath = this.cbjUnlabel();
+			}//End unlabel check
+
+			//Check for base case
+			if(currPath == null)
+			{
+				status = "Impossible";
+			}//End impossible check
+			else
+			{
+				temp = currPath.get(currPath.size() - 1);
+			}
+		}//End loop until a status is determined
+
+		return solutionSet;
+	}//end backtrackSearch
+
+	/*====================
+	 * Unlables the given variable
+	 *====================*/
+	public ArrayList<Variable> cbjUnlabel()
+	{
+		//Find the deepest conflict in the conflict list
+		ArrayList<Variable> set = this.confSet.get(this.confSet.size() - 1);
+		int jumpTo = this.assigned.size() - 2;
+		this.bt++;
+		for(int i = jumpTo; i >= 0; i--)
+		{
+			if(set.contains(this.assigned.get(i)))
+			{
+				break;
+			}//End check to see if this var is in the conflict list
+		}//End finding deepest conflictS
+
+		if(jumpTo < 0)
+			return null;
+
+		//Adds conflict sets together
+		ArrayList<Variable> newSet = this.confSet.get(jumpTo);
+		for(int i = 0; i < set.size(); i++)
+		{
+			if(!(newSet.contains(set.get(i))) || !(set.get(i).equals(this.assigned.get(jumpTo))))
+			{
+				newSet.add(set.get(i));
+			}//End filter check
+		}//end set combination
+
+
+		for(int i = this.assigned.size() - 1; i > jumpTo; i--)
+		{
+			Variable temp = this.assigned.get(i);
+			temp.restore();
+			temp.removeAssignment();
+			this.unassigned.add(0, temp);
+			this.assigned.remove(i);
+			this.confSet.remove(i);
+		}//End unassigning of variables
+
+		Variable temp = this.assigned.get(jumpTo);
+		temp.removeFromDomain(temp.getAssignment());
+		temp.removeAssignment();
+		return this.assigned;
+	}//end unlable
+
+	/*====================
+	 * Labels the given variable
+	 *====================*/
+	public ArrayList<Variable> cbjLabel(ArrayList<Variable> vars)
+	{
+		boolean consistent = false;
+		int varSize = vars.size() - 1;
+		Variable currVar = vars.get(varSize);
+		ArrayList<Integer> domain = currVar.getCurrDomain();
+		//for each value in the domain i 
+		for(int i = 0; i < domain.size(); i++)
+		{
+			consistent = true;
+			currVar.setAssignment(currVar.getCurrDomain().get(i));
+			this.nv++;
+			//for each previous assignment h
+			for(int j = 0; j < varSize; j++)
+			{
+				//consistent = consistent && check i, h
+				boolean check = this.check(currVar, currVar.getAssignment(), vars.get(j), vars.get(j).getAssignment());
+				consistent = consistent && check;
+
+				//Update conflict set
+				if(!check)
+				{
+					if(!(this.confSet.get(confSet.size() -1).contains(vars.get(j))))
+					{
+						this.confSet.get(confSet.size() - 1).add(vars.get(j));
+						break;
+					}
+				}//End update of conflict set
+			}//End iteraion through previous 
+			//if consistent
+			if(consistent)
+			{
+				//initialize next variable
+				return this.requestNextVariable();
+			}//End consistent check
+			//else
+			else
+			{
+				//remove i from current domain
+				currVar.removeFromDomain(currVar.getCurrDomain().get(i));
+				currVar.removeAssignment();
+				i--;
+			}//End remov
+		}//End domain iteration
+
+		return vars;
 	}//end label
+
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
+
+	//Forward Checking
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
+	
+	/*
+	 * Prunes the domain of future to make it consistant with past
+	 */
+	public boolean forwardCheck(Variable past, Variable future)
+	{
+		ArrayList<Integer> reduction = new ArrayList<Integer>();
+		ArrayList<Integer> domain = future.getCurrDomain();
+		for(int i = 0; i < domain.size(); i++)
+		{
+			Integer value = domain.get(i);
+			boolean checkVal = this.check(past, past.getAssignment(), future, value);
+			if(!checkVal)
+			{
+				reduction.add(value);
+				future.removeFromDomain(value);
+				i--;
+			}//End check for not valid values
+		}//End domain iteration
+		future.pushReduction(reduction);
+		past.pushFuture(future);
+		future.pushPast(past);
+		if(domain.size() <= 0)
+		{
+			return false;
+		}//End domain wipout check		
+		return true;
+	}//End forwardCheck
+
+	/*
+	 * Undoes the pruning done by variable i
+	 */
+	public void undoReductions(Variable i)
+	{
+		ArrayList<Variable> future = i.getFuture();
+		int size = future.size();
+		for(int j = 0; j < size; j++)
+		{
+			Variable var = future.get(j);
+			ArrayList<Integer> reduction = var.popReductions();
+			int reducSize = reduction.size();
+			for(int k = 0; k < reducSize; k++)
+			{
+				var.returnDomain(reduction.get(k));
+			}//End domain union
+			var.popPast();			
+		}//End iteration through all future variables 
+		for(int j = size - 1; j >= 0; j--)
+		{
+			future.remove(j);
+		}//End clear of future
+	}//End undoReductions
+
+	/*
+	 * updates the current domain of i
+	 */
+	public void updateCurrDomain(Variable i)
+	{
+		i.restore();
+		ArrayList<ArrayList<Integer>> reductions = i.getReductions();
+		int size = reductions.size();
+		for(int j = 0; j < size; j++)
+		{
+			ArrayList<Integer> reduction = reductions.get(j);
+			int reducSize = reduction.size();
+			for(int k = 0; k < reducSize; k++)
+			{
+				i.removeFromDomain(reduction.get(k));
+			}//End loop through reduction
+		}//ENd loop through all reductions
+	}//End updateCurrDomain
+
+	/*
+	 * Labels the given variable can handle CBJ
+	 */
+	public ArrayList<Variable> fcLabel(ArrayList<Variable> vars, boolean CBJ)
+	{
+		boolean consistent = false;
+		int varSize = vars.size() - 1;
+		Variable currVar = vars.get(varSize);
+		ArrayList<Integer> domain = currVar.getCurrDomain();
+		//for each value in the domain i 
+		for(int i = 0; i < domain.size(); i++)
+		{
+			consistent = true;
+			currVar.setAssignment(domain.get(i));
+			this.nv++;
+			
+			//For each future variable
+			int futureSize = this.unassigned.size();
+			for(int j = 0; j < futureSize; j++)
+			{
+				boolean check = this.forwardCheck(currVar, this.unassigned.get(j));
+				consistent = check && consistent;
+				
+				//TODO
+				if(CBJ && !check)
+				{
+					//conf-set[i] < union(conf-set[i], past-fc(j))
+					ArrayList<Variable> conf = this.confSet.get(confSet.size() - 1);
+					ArrayList<Variable> past = this.unassigned.get(j).getPast();
+					int size = past.size();
+					for(int k = 0; k < size; k++)
+					{
+						if(!(conf.contains(past.get(i))))
+						{
+							conf.add(past.get(i));
+						}//End existance check
+					}//End iteration through past-fc
+				}
+			}//End iteration over future variables
+			//if consistent
+			if(consistent)
+			{
+				//initialize next variable
+				return this.requestNextVariable();
+			}//End consistent check
+			//else
+			else
+			{
+				//remove i from current domain
+				currVar.removeFromDomain(currVar.getCurrDomain().get(i));
+				currVar.removeAssignment();
+				this.undoReductions(currVar);
+				i--;
+			}//End remov
+		}//End iteration through domain
+		return vars;
+	}//End fcLable
+
+	/*
+	 * Unlables the given variable
+	 */
+	public ArrayList<Variable> fcUnlabel(ArrayList<Variable> vars, boolean CBJ)
+	{
+		//Find the deepest conflict in the conflict list
+		ArrayList<Variable> set = null;
+		ArrayList<Variable> pastfc = null;
+		int jumpTo = this.assigned.size() - 2;
+		this.bt++;
+		if(CBJ)
+		{
+			set = this.confSet.get(this.confSet.size() - 1);
+			pastfc = this.assigned.get(jumpTo + 1).getPast();
+			for(int i = jumpTo; i >= 0; i--)
+			{
+				Variable temp = this.assigned.get(i);
+				if(set.contains(temp) || pastfc.contains(temp))
+				{
+					break;
+				}//End check to see if this var is in the conflict list
+			}//End finding deepest conflictS
+		}// end cbj check
+
+		if(jumpTo < 0)
+			return null;
+
+		if(CBJ)
+		{
+			//Adds conflict sets together
+			ArrayList<Variable> newSet = this.confSet.get(jumpTo);
+			for(int i = 0; i < set.size(); i++)
+			{
+				Variable temp = set.get(i);
+				if(!(newSet.contains(temp)) || !(temp.equals(this.assigned.get(jumpTo))))
+				{
+					newSet.add(temp);
+				}//End filter check
+			}//end set combination
+			for(int i = 0; i < pastfc.size(); i++)
+			{
+				Variable temp = pastfc.get(i);
+				if(!(newSet.contains(temp)) || !(temp.equals(this.assigned.get(jumpTo))))
+				{
+					newSet.add(temp);
+				}//End filter check
+			}//end pastfc combination
+		}//end cbj check
+
+
+		for(int i = this.assigned.size() - 1; i > jumpTo; i--)
+		{
+			Variable temp = this.assigned.get(i);
+			temp.removeAssignment();
+			this.undoReductions(temp);
+			this.updateCurrDomain(temp);
+			this.unassigned.add(0, temp);
+			this.assigned.remove(i);
+			if(CBJ)
+			{
+				this.confSet.remove(i);
+			}
+			
+		}//End unassigning of variables
+		Variable jump = this.assigned.get(jumpTo);
+		this.undoReductions(jump);
+		jump.removeFromDomain(jump.getAssignment());
+		jump.removeAssignment();
+		return this.assigned;
+	}//End fcUnlable
+
+	/*
+	 * Searches for a solution
+	 */
+	public ArrayList<Integer[]> fcSearch(boolean all, boolean CBJ)
+	{
+		String status = null;
+		Variable temp = null;
+		ArrayList<Integer[]> solutionSet = new ArrayList<Integer[]>();
+		//Gets the starting variable to instantiate
+		ArrayList<Variable> currPath = this.requestNextVariable();
+
+		//Checks to ensure there was not an error with getting variables
+		if(currPath == null)
+		{
+			status = "Impossible";
+		}//End check
+		else
+		{
+			temp = currPath.get(currPath.size() -1);
+		}//End else check
+
+		while(status == null)
+		{				
+			//Labels the incoming variable
+			currPath = this.fcLabel(currPath, CBJ);
+			if(currPath == null)
+			{
+				int size = this.assigned.size();
+				Integer[] solution = new Integer[size];
+				for(int i = 0; i < size; i++)
+				{
+					Integer entry = this.variables.get(i).getAssignment();
+					solution[i] = entry;
+				}//End solution iteration
+				solutionSet.add(solution);
+				if(all)
+				{	
+
+					Variable tempVar = this.assigned.get(this.assigned.size() -1);
+					tempVar.removeFromDomain(tempVar.getAssignment());
+					tempVar.removeAssignment();
+					currPath = this.assigned;
+
+					if(CBJ)
+					{
+						ArrayList<Variable> set = this.confSet.get(this.confSet.size() - 1);
+						int length = this.assigned.size() - 1;
+						for(int i = 0; i < length; i++)
+						{
+							if(!(confSet.contains(this.assigned.get(i))))
+								set.add(this.assigned.get(i));
+						}//End itteration through variables 
+					}//End cbj check
+					
+					 
+				}//end look for all solutoins
+				else
+				{
+					status = "Solved";
+					return solutionSet;
+				}//End changing
+			}//End solution check
+			temp = currPath.get(currPath.size() -1); 
+			//If temp failed
+			if(temp.getCurrDomain().size() == 0)
+			{
+				//Unlable current variable
+				currPath = this.fcUnlabel(currPath, CBJ);
+			}//End unlabel check
+
+			//Check for base case
+			if(currPath == null)
+			{
+				status = "Impossible";
+			}//End impossible check
+			else
+			{
+				temp = currPath.get(currPath.size() - 1);
+			}
+		}//End loop until a status is determined
+
+		return solutionSet;
+	}//end backtrackSearch
+
+	//====================================================================================================================
+	//====================================================================================================================
+	//====================================================================================================================
 }//End Class
